@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão de Pedidos | Cabana Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 font-sans flex">
+    
+    <aside class="w-64 bg-[#2D2A4A] text-white p-6 hidden md:block min-h-screen fixed h-full">
+        <div class="text-xl font-bold mb-10">Cabana<span class="text-[#FF6B95]">.Admin</span></div>
+        <nav class="space-y-4 text-sm">
+            <a href="painel.html" class="flex gap-3 text-[#FF6B95] font-bold"><i data-lucide="layout-dashboard"></i> Pedidos</a>
+            <a href="agenda.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="calendar"></i> Agenda</a>
+            <a href="financeiro.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="dollar-sign"></i> Financeiro</a>
+            <a href="precos.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="package"></i> Estoque/Preços</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 md:ml-64">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">Pedidos Recentes</h1>
+            <div class="bg-white px-4 py-2 rounded-lg shadow-sm text-sm font-bold text-slate-500">
+                <span id="contador-pendentes" class="text-[#FF6B95]">0</span> Pendentes
+            </div>
+        </header>
+
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <button onclick="filtrar('todos')" class="px-4 py-2 bg-white rounded-full text-sm font-bold shadow-sm border hover:border-pink-300">Todos</button>
+            <button onclick="filtrar('pendente')" class="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-full text-sm font-bold shadow-sm">Pendentes</button>
+            <button onclick="filtrar('aprovado')" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-bold shadow-sm">Na Agenda</button>
+            <button onclick="filtrar('concluido')" class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-bold shadow-sm">Concluídos</button>
+        </div>
+
+        <div id="lista-pedidos" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        let todosPedidos = [];
+
+        async function carregarPedidos() {
+            try {
+                const res = await fetch('/api/admin/pedidos', {
+                    headers: { 'x-admin-password': localStorage.getItem('admin_pass') }
+                });
+                todosPedidos = await res.json();
+                renderizar(todosPedidos);
+                atualizarContador();
+            } catch (err) {
+                alert('Erro ao carregar pedidos. Verifique se está logado.');
+            }
+        }
+
+        function renderizar(lista) {
+            const container = document.getElementById('lista-pedidos');
+            container.innerHTML = lista.map(p => {
+                const dataFesta = new Date(p.data_festa).toLocaleDateString();
+                
+                // Define cores e ações baseadas no status
+                let statusBadge, acoes;
+                
+                if (p.status === 'pendente') {
+                    statusBadge = `<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold uppercase">Pendente</span>`;
+                    acoes = `
+                        <button onclick="aprovarPedido(${p.id})" class="flex-1 bg-[#2D2A4A] text-white py-2 rounded-lg text-sm font-bold hover:bg-slate-800">
+                            Aprovar
+                        </button>
+                        <button onclick="excluirPedido(${p.id})" class="px-3 py-2 text-red-400 hover:bg-red-50 rounded-lg">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                } else if (p.status === 'aprovado') {
+                    statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase">Agendado</span>`;
+                    acoes = `<div class="text-xs text-center w-full text-slate-400 font-bold">Ver na Agenda</div>`;
+                } else {
+                    statusBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold uppercase">Concluído</span>`;
+                    acoes = `<div class="text-xs text-center w-full text-green-600 font-bold">Avaliação Enviada</div>`;
+                }
+
+                // Parse seguro dos JSONs
+                let itens = [];
+                try { itens = JSON.parse(p.itens_padrao) || [] } catch(e){}
+
+                return `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-slate-800">${p.nome}</h3>
+                                <p class="text-xs text-slate-400">Pedido #${p.id}</p>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        
+                        <div class="space-y-2 text-sm text-slate-600 mb-6">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-4 h-4 text-pink-400"></i>
+                                <span>${dataFesta} às ${p.horario}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-pink-400"></i>
+                                <span class="truncate">${p.endereco}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="package" class="w-4 h-4 text-pink-400"></i>
+                                <span>${p.qtd_barracas}x ${p.modelo_barraca} (${p.tema})</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-auto pt-4 border-t border-slate-50">
+                            <a href="https://wa.me/55${p.whatsapp.replace(/\D/g,'')}" target="_blank" class="px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition">
+                                <i data-lucide="message-circle" class="w-5 h-5"></i>
+                            </a>
+                            ${acoes}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        async function aprovarPedido(id) {
+            if(!confirm('Aprovar orçamento e enviar para a Agenda?')) return;
+            
+            const res = await fetch(`/api/admin/pedidos/${id}/aprovar`, {
+                method: 'PUT',
+                headers: { 'x-admin-password': localStorage.getItem('admin_pass') }
+            });
+
+            if (res.ok) {
+                // Traz o link caso queira copiar, mas o sistema já gerou
+                const data = await res.json();
+                alert('Pedido Aprovado! Agora ele aparece no Calendário.');
+                carregarPedidos();
+            }
+        }
+
+        async function excluirPedido(id) {
+            if(!confirm('Tem certeza? Essa ação é irreversível.')) return;
+            await fetch(`/api/admin/pedidos/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-admin-password': localStorage.getItem('admin_pass') }
+            });
+            carregarPedidos();
+        }
+
+        function filtrar(status) {
+            if(status === 'todos') renderizar(todosPedidos);
+            else renderizar(todosPedidos.filter(p => p.status === status));
+        }
+
+        function atualizarContador() {
+            const count = todosPedidos.filter(p => p.status === 'pendente').length;
+            document.getElementById('contador-pendentes').innerText = count;
+        }
+
+        // Verifica login simples
+        if(!localStorage.getItem('admin_pass')) {
+            const pass = prompt('Senha do Admin:');
+            localStorage.setItem('admin_pass', pass);
+        }
+        
+        carregarPedidos();
+    </script>
+</body>
+</html>
