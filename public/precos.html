@@ -1,103 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Gerenciador de Itens | Cabana Admin</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Estoque</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-slate-50 font-sans flex">
-    
-    <aside class="w-64 bg-[#2D2A4A] text-white p-6 hidden md:block min-h-screen">
-        <div class="text-xl font-bold mb-10">Cabana<span class="text-[#FF6B95]">.Admin</span></div>
-        <nav class="space-y-4 text-sm">
-            <a href="painel.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="layout-dashboard"></i> Pedidos</a>
-            <a href="agenda.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="calendar"></i> Agenda</a>
-            <a href="financeiro.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="dollar-sign"></i> Financeiro</a>
-            <a href="precos.html" class="flex gap-3 text-[#FF6B95] font-bold"><i data-lucide="package"></i> Estoque/Preços</a>
-        </nav>
+  </head>
+  <body class="bg-slate-50 flex">
+    <aside class="w-64 bg-slate-900 text-white h-screen fixed p-6">
+      <div class="text-xl font-bold mb-8 text-pink-500">Cabana Admin</div>
+      <nav class="space-y-4">
+        <a href="painel.html" class="block hover:text-pink-400">Pedidos</a>
+        <a href="agenda.html" class="block hover:text-pink-400">Agenda</a>
+        <a href="financeiro.html" class="block hover:text-pink-400"
+          >Financeiro</a
+        >
+        <a href="precos.html" class="block font-bold text-pink-400">Estoque</a>
+      </nav>
     </aside>
-
-    <main class="flex-1 p-8">
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-slate-800">Itens do Formulário</h1>
-            <button onclick="modalNovo()" class="bg-pink-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-pink-600 transition flex gap-2 text-sm">
-                <i data-lucide="plus"></i> Novo Item
-            </button>
-        </header>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 text-slate-400 font-bold text-xs uppercase">
-                    <tr>
-                        <th class="p-4">Item</th>
-                        <th class="p-4">Categoria</th>
-                        <th class="p-4">Valor (R$)</th>
-                        <th class="p-4 text-center">Visível no Site?</th>
-                        <th class="p-4 text-right">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-itens" class="divide-y divide-slate-100">
-                    </tbody>
-            </table>
-        </div>
+    <main class="ml-64 p-8 w-full">
+      <div class="flex justify-between mb-6">
+        <h1 class="text-2xl font-bold">Itens do Formulário</h1>
+        <button
+          onclick="add()"
+          class="bg-pink-500 text-white px-4 py-2 rounded"
+        >
+          Novo Item
+        </button>
+      </div>
+      <div class="bg-white rounded shadow" id="list"></div>
     </main>
-
     <script>
-        lucide.createIcons();
-        const headers = { 'x-admin-password': localStorage.getItem('admin_pass') };
-
-        async function carregarItens() {
-            // Usa a rota ADMIN que lista tudo (inclusive indisponíveis)
-            const res = await fetch('/api/admin/precos', { headers });
-            const itens = await res.json();
-            const tbody = document.getElementById('lista-itens');
-            tbody.innerHTML = '';
-
-            itens.forEach(item => {
-                const isChecked = item.disponivel ? 'checked' : '';
-                const opacity = item.disponivel ? '' : 'opacity-50 grayscale'; // Visual feedback
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition ${opacity}">
-                        <td class="p-4 font-bold text-slate-700">${item.descricao}</td>
-                        <td class="p-4"><span class="bg-slate-100 px-2 py-1 rounded text-xs font-bold text-slate-500 uppercase">${item.categoria}</span></td>
-                        <td class="p-4 text-slate-600">R$ ${parseFloat(item.valor).toFixed(2)}</td>
-                        
-                        <td class="p-4 text-center">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" ${isChecked} onchange="toggleItem(${item.id}, this.checked)" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                            </label>
-                        </td>
-
-                        <td class="p-4 text-right">
-                            <button onclick="deletarItem(${item.id})" class="text-red-400 hover:text-red-600 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-            lucide.createIcons();
+      const pass = localStorage.getItem("admin_pass");
+      async function load() {
+        const res = await fetch("/api/admin/precos", {
+          headers: { "x-admin-password": pass },
+        });
+        const itens = await res.json();
+        document.getElementById("list").innerHTML = itens
+          .map(
+            (i) => `
+                <div class="flex justify-between p-4 border-b items-center">
+                    <div>
+                        <div class="font-bold">${i.descricao}</div>
+                        <div class="text-xs text-slate-400 uppercase">${i.categoria}</div>
+                    </div>
+                    <div class="flex gap-4 items-center">
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" ${i.disponivel ? "checked" : ""} onchange="toggle(${i.id}, this.checked)"> Disponível</label>
+                        <button onclick="del(${i.id})" class="text-red-500">Excluir</button>
+                    </div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+      async function toggle(id, st) {
+        await fetch(`/api/admin/precos/${id}/toggle`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-password": pass,
+          },
+          body: JSON.stringify({ disponivel: st }),
+        });
+      }
+      async function del(id) {
+        if (confirm("Excluir?"))
+          await fetch(`/api/admin/precos/${id}`, {
+            method: "DELETE",
+            headers: { "x-admin-password": pass },
+          });
+        load();
+      }
+      async function add() {
+        const cat = prompt("Categoria (padrao, alimentacao, tendas):");
+        const nome = prompt("Nome do Item:");
+        if (cat && nome) {
+          await fetch("/api/admin/precos", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-password": pass,
+            },
+            body: JSON.stringify({ descricao: nome, categoria: cat, valor: 0 }),
+          });
+          load();
         }
-
-        async function toggleItem(id, estado) {
-            await fetch(`/api/admin/precos/${id}/toggle`, {
-                method: 'PUT',
-                headers: { ...headers, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ disponivel: estado })
-            });
-            // Opcional: Recarregar para atualizar visual (opacity)
-             carregarItens(); 
-        }
-
-        async function deletarItem(id) {
-            if(confirm('Tem certeza? Isso some com o item para sempre.')) {
-                await fetch(`/api/admin/precos/${id}`, { method: 'DELETE', headers });
-                carregarItens();
-            }
-        }
-
-        carregarItens();
+      }
+      load();
     </script>
-</body>
+  </body>
 </html>

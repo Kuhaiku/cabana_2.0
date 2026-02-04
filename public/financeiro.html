@@ -1,130 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Financeiro | Cabana Admin</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Financeiro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-slate-50 font-sans flex">
-    
-    <aside class="w-64 bg-[#2D2A4A] text-white p-6 hidden md:block min-h-screen">
-        <div class="text-xl font-bold mb-10">Cabana<span class="text-[#FF6B95]">.Admin</span></div>
-        <nav class="space-y-4 text-sm">
-            <a href="painel.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="layout-dashboard"></i> Pedidos</a>
-            <a href="agenda.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="calendar"></i> Agenda</a>
-            <a href="financeiro.html" class="flex gap-3 text-[#FF6B95] font-bold"><i data-lucide="dollar-sign"></i> Financeiro</a>
-            <a href="precos.html" class="flex gap-3 opacity-70 hover:opacity-100"><i data-lucide="package"></i> Estoque/Preços</a>
-        </nav>
+  </head>
+  <body class="bg-slate-50 flex">
+    <aside class="w-64 bg-slate-900 text-white h-screen fixed p-6">
+      <div class="text-xl font-bold mb-8 text-pink-500">Cabana Admin</div>
+      <nav class="space-y-4">
+        <a href="painel.html" class="block hover:text-pink-400">Pedidos</a>
+        <a href="agenda.html" class="block hover:text-pink-400">Agenda</a>
+        <a href="financeiro.html" class="block font-bold text-pink-400"
+          >Financeiro</a
+        >
+        <a href="precos.html" class="block hover:text-pink-400">Estoque</a>
+      </nav>
     </aside>
-
-    <main class="flex-1 p-8">
-        <h1 class="text-2xl font-bold text-slate-800 mb-8">Fluxo de Caixa</h1>
-
-        <div class="grid grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <div class="text-sm text-slate-400 font-bold uppercase mb-2">Entradas</div>
-                <div id="total-entradas" class="text-3xl font-bold text-green-500">R$ 0,00</div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <div class="text-sm text-slate-400 font-bold uppercase mb-2">Saídas</div>
-                <div id="total-saidas" class="text-3xl font-bold text-red-500">R$ 0,00</div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <div class="text-sm text-slate-400 font-bold uppercase mb-2">Saldo Líquido</div>
-                <div id="saldo-liquido" class="text-3xl font-bold text-slate-800">R$ 0,00</div>
-            </div>
-        </div>
-
-        <div class="flex justify-end mb-4">
-            <button onclick="document.getElementById('modal-novo').classList.remove('hidden')" class="bg-[#2D2A4A] text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-800 transition flex gap-2">
-                <i data-lucide="plus-circle"></i> Novo Lançamento
-            </button>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 text-slate-400 font-bold text-xs uppercase">
-                    <tr>
-                        <th class="p-4">Data</th>
-                        <th class="p-4">Descrição</th>
-                        <th class="p-4">Tipo</th>
-                        <th class="p-4 text-right">Valor</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-transacoes" class="text-sm text-slate-600 divide-y divide-slate-100">
-                    </tbody>
-            </table>
-        </div>
+    <main class="ml-64 p-8 w-full">
+      <div class="flex justify-between mb-6">
+        <h1 class="text-2xl font-bold">Fluxo de Caixa</h1>
+        <button
+          onclick="add()"
+          class="bg-pink-500 text-white px-4 py-2 rounded"
+        >
+          Novo Lançamento
+        </button>
+      </div>
+      <div class="bg-white rounded shadow overflow-hidden">
+        <table class="w-full text-left">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="p-4">Data</th>
+              <th class="p-4">Título</th>
+              <th class="p-4">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
     </main>
-
-    <div id="modal-novo" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-2xl w-96 shadow-2xl">
-            <h3 class="font-bold text-lg mb-4">Novo Lançamento</h3>
-            <select id="novo-tipo" class="w-full mb-3 p-2 border rounded">
-                <option value="saida">🔴 Saída (Despesa)</option>
-                <option value="entrada">🟢 Entrada (Extra)</option>
-            </select>
-            <input id="novo-titulo" type="text" placeholder="Descrição (ex: Conta de Luz)" class="w-full mb-3 p-2 border rounded">
-            <input id="novo-valor" type="number" step="0.01" placeholder="Valor (R$)" class="w-full mb-4 p-2 border rounded">
-            <button onclick="salvarLancamento()" class="w-full bg-[#FF6B95] text-white font-bold py-2 rounded hover:bg-pink-600">Salvar</button>
-            <button onclick="document.getElementById('modal-novo').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-sm hover:underline">Cancelar</button>
-        </div>
-    </div>
-
     <script>
-        lucide.createIcons();
-        
-        async function carregarFinanceiro() {
-            const res = await fetch('/api/admin/financeiro', { headers: { 'x-admin-password': localStorage.getItem('admin_pass') }});
-            const dados = await res.json();
-            
-            let entradas = 0, saidas = 0;
-            const tbody = document.getElementById('lista-transacoes');
-            tbody.innerHTML = '';
-
-            dados.forEach(item => {
-                const val = parseFloat(item.valor);
-                if(item.tipo === 'entrada') entradas += val; else saidas += val;
-                
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="p-4">${new Date(item.data).toLocaleDateString()}</td>
-                        <td class="p-4 font-bold">${item.titulo}</td>
-                        <td class="p-4">
-                            <span class="px-2 py-1 rounded text-xs font-bold ${item.tipo === 'entrada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-                                ${item.tipo.toUpperCase()}
-                            </span>
-                        </td>
-                        <td class="p-4 text-right font-mono ${item.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}">
-                            ${item.tipo === 'saida' ? '-' : '+'} R$ ${val.toFixed(2)}
-                        </td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('total-entradas').innerText = `R$ ${entradas.toFixed(2)}`;
-            document.getElementById('total-saidas').innerText = `R$ ${saidas.toFixed(2)}`;
-            document.getElementById('saldo-liquido').innerText = `R$ ${(entradas - saidas).toFixed(2)}`;
+      async function load() {
+        const res = await fetch("/api/admin/financeiro", {
+          headers: { "x-admin-password": localStorage.getItem("admin_pass") },
+        });
+        const list = await res.json();
+        document.getElementById("tb").innerHTML = list
+          .map(
+            (i) => `
+                <tr class="border-b"><td class="p-4">${new Date(i.data).toLocaleDateString()}</td><td class="p-4">${i.titulo}</td><td class="p-4 ${i.tipo === "entrada" ? "text-green-600" : "text-red-600"}">R$ ${parseFloat(i.valor).toFixed(2)}</td></tr>
+            `,
+          )
+          .join("");
+      }
+      async function add() {
+        const titulo = prompt("Descrição:");
+        const valor = prompt("Valor (Use negativo para saídas):");
+        if (titulo && valor) {
+          await fetch("/api/admin/financeiro", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-password": localStorage.getItem("admin_pass"),
+            },
+            body: JSON.stringify({
+              tipo: valor < 0 ? "saida" : "entrada",
+              titulo,
+              valor: Math.abs(valor),
+            }),
+          });
+          load();
         }
-
-        async function salvarLancamento() {
-            const tipo = document.getElementById('novo-tipo').value;
-            const titulo = document.getElementById('novo-titulo').value;
-            const valor = document.getElementById('novo-valor').value;
-
-            await fetch('/api/admin/financeiro', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-admin-password': localStorage.getItem('admin_pass') 
-                },
-                body: JSON.stringify({ tipo, titulo, valor })
-            });
-            location.reload();
-        }
-
-        carregarFinanceiro();
+      }
+      load();
     </script>
-</body>
+  </body>
 </html>

@@ -1,111 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Mestre | Cabana de Brincar</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agenda</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-    <style>
-        :root { --fc-border-color: #f1f5f9; --fc-today-bg-color: #fff5f8; }
-        .fc-event { cursor: pointer; border: none; padding: 2px 4px; border-radius: 6px; }
-        .fc-toolbar-title { font-family: 'Fredoka', sans-serif; font-weight: 700; color: #2d2a4a; }
-        .fc-button-primary { background-color: #ff6b95 !important; border: none !important; font-weight: 700 !important; }
-    </style>
-</head>
-<body class="bg-slate-50 font-sans">
-
-    <div class="flex min-h-screen">
-        <aside class="w-64 bg-brand-dark text-white p-6 hidden md:block">
-            <div class="text-xl font-bold mb-10">Cabana<span class="text-brand-pink">.Admin</span></div>
-            <nav class="space-y-4">
-                <a href="painel.html" class="flex items-center gap-3 opacity-70 hover:opacity-100"><i data-lucide="layout-dashboard"></i> Pedidos</a>
-                <a href="agenda.html" class="flex items-center gap-3 text-brand-pink font-bold"><i data-lucide="calendar"></i> Agenda</a>
-                <a href="financeiro.html" class="flex items-center gap-3 opacity-70 hover:opacity-100"><i data-lucide="dollar-sign"></i> Financeiro</a>
-            </nav>
-        </aside>
-
-        <main class="flex-1 p-4 md:p-8">
-            <header class="flex justify-between items-center mb-8">
-                <h1 class="text-2xl font-bold text-slate-800">Calendário de Reservas</h1>
-                <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 text-sm font-medium">
-                    <span id="festa-count">0</span> Festas este mês
-                </div>
-            </header>
-
-            <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
-                <div id='calendar'></div>
-            </div>
-        </main>
-    </div>
-
-    <div id="modal-evento" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-slate-800">Detalhes da Reserva</h3>
-                <button onclick="fecharModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
-            </div>
-            <div id="detalhes-corpo" class="p-6 space-y-4">
-                </div>
-            <div class="p-6 bg-slate-50 flex gap-3">
-                <button id="btn-concluir" class="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-all">Concluir Serviço</button>
-                <button id="btn-zap" class="bg-slate-800 text-white px-4 rounded-xl hover:bg-slate-700 transition-all"><i data-lucide="message-circle"></i></button>
-            </div>
-        </div>
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  </head>
+  <body class="bg-slate-50 flex">
+    <aside class="w-64 bg-slate-900 text-white h-screen fixed p-6">
+      <div class="text-xl font-bold mb-8 text-pink-500">Cabana Admin</div>
+      <nav class="space-y-4">
+        <a href="painel.html" class="block hover:text-pink-400">Pedidos</a>
+        <a href="agenda.html" class="block font-bold text-pink-400">Agenda</a>
+        <a href="financeiro.html" class="block hover:text-pink-400"
+          >Financeiro</a
+        >
+        <a href="precos.html" class="block hover:text-pink-400">Estoque</a>
+      </nav>
+    </aside>
+    <main class="ml-64 p-8 w-full">
+      <div class="bg-white p-6 rounded shadow h-[80vh]" id="calendar"></div>
+    </main>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            lucide.createIcons();
-            const calendarEl = document.getElementById('calendar');
-            
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'pt-br',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
+      document.addEventListener("DOMContentLoaded", function () {
+        const calendarEl = document.getElementById("calendar");
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "dayGridMonth",
+          locale: "pt-br",
+          events: {
+            url: "/api/admin/agenda",
+            extraParams: {
+              "x-admin-password": localStorage.getItem("admin_pass"),
+            },
+          },
+          eventClick: function (info) {
+            if (
+              confirm(
+                "Concluir serviço e liberar avaliação para " +
+                  info.event.title +
+                  "?",
+              )
+            ) {
+              fetch(`/api/admin/pedidos/${info.event.id}/concluir`, {
+                method: "PUT",
+                headers: {
+                  "x-admin-password": localStorage.getItem("admin_pass"),
                 },
-                events: '/api/admin/agenda', // Rota que buscaremos do banco
-                eventClick: function(info) {
-                    abrirModal(info.event.extendedProps);
-                }
-            });
-            calendar.render();
-        });
-
-        function abrirModal(dados) {
-            const corpo = document.getElementById('detalhes-corpo');
-            corpo.innerHTML = `
-                <div><label class="text-xs font-bold text-slate-400 uppercase">Cliente</label><p class="font-bold text-lg">${dados.nome}</p></div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-slate-400 uppercase">WhatsApp</label><p>${dados.whatsapp}</p></div>
-                    <div><label class="text-xs font-bold text-slate-400 uppercase">Horário</label><p>${dados.horario}</p></div>
-                </div>
-                <div><label class="text-xs font-bold text-slate-400 uppercase">Endereço</label><p class="text-sm">${dados.endereco}</p></div>
-                <div><label class="text-xs font-bold text-slate-400 uppercase">Configuração</label><p class="text-sm">${dados.qtd_barracas}x ${dados.modelo_barraca}</p></div>
-            `;
-            
-            document.getElementById('btn-concluir').onclick = () => concluirServico(dados.id);
-            document.getElementById('btn-zap').onclick = () => window.open(`https://wa.me/${dados.whatsapp.replace(/\D/g,'')}`);
-            document.getElementById('modal-evento').classList.remove('hidden');
-        }
-
-        function fecharModal() { document.getElementById('modal-evento').classList.add('hidden'); }
-
-        async function concluirServico(id) {
-            if(!confirm("Deseja concluir esta festa? Isso gerará o link de avaliação.")) return;
-            const res = await fetch(`/api/admin/pedidos/${id}/concluir`, { 
-                method: 'PUT',
-                headers: { 'x-admin-password': localStorage.getItem('admin_pass') }
-            });
-            if(res.ok) {
-                alert("Serviço concluído! O cliente já pode avaliar.");
-                location.reload();
+              }).then(() => {
+                alert("Concluído!");
+                info.event.remove();
+              });
             }
-        }
+          },
+        });
+        calendar.render();
+      });
     </script>
-</body>
+  </body>
 </html>
